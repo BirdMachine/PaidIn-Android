@@ -47,9 +47,9 @@ fun PaidInApp(vm: PaidInViewModel) {
             bottomBar = {
                 GlassBar {
                     NavigationBar(containerColor = Color.Transparent) {
-                        NavigationBarItem(tab == Tab.RADAR, { tab = Tab.RADAR }, { Icon(Icons.Default.Radar, null) }, { Text("Radar") })
-                        NavigationBarItem(tab == Tab.RULES, { tab = Tab.RULES }, { Icon(Icons.Default.Tune, null) }, { Text("Dial") })
-                        NavigationBarItem(tab == Tab.SETTINGS, { tab = Tab.SETTINGS }, { Icon(Icons.Default.Settings, null) }, { Text("Settings") })
+                        NavigationBarItem(selected = tab == Tab.RADAR, onClick = { tab = Tab.RADAR }, icon = { Icon(Icons.Default.Radar, null) }, label = { Text("Radar") })
+                        NavigationBarItem(selected = tab == Tab.RULES, onClick = { tab = Tab.RULES }, icon = { Icon(Icons.Default.Tune, null) }, label = { Text("Dial") })
+                        NavigationBarItem(selected = tab == Tab.SETTINGS, onClick = { tab = Tab.SETTINGS }, icon = { Icon(Icons.Default.Settings, null) }, label = { Text("Settings") })
                     }
                 }
             }
@@ -97,7 +97,8 @@ private fun RadarScreen(jobs: List<Job>, onStatus: (String, ReviewStatus) -> Uni
     }
 }
 
-@Composable private fun Metric(value: String, label: String, modifier: Modifier = Modifier) = GlassPanel(modifier) {
+@Composable
+private fun Metric(value: String, label: String, modifier: Modifier = Modifier) = GlassPanel(modifier) {
     Text(value, fontSize = 26.sp, fontWeight = FontWeight.Black)
     Text(label, fontSize = 12.sp, color = Color(0xFFD8F9FF))
 }
@@ -115,11 +116,14 @@ private fun JobCard(job: Job, onStatus: (String, ReviewStatus) -> Unit) {
                 Text(job.title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Text(job.company, color = Color(0xFFB5FAFF), fontWeight = FontWeight.SemiBold)
                 Text("${job.location} • ${job.remoteStatus}", color = Color(0xFFE0FAFF), fontSize = 13.sp)
-                job.salaryMax?.let { Text("$${job.salaryMin ?: 0}–$$it", color = Color(0xFFCAFF69), fontWeight = FontWeight.Bold) }
+                job.salaryMax?.let { max ->
+                    Text("\$${job.salaryMin ?: 0}–\$$max", color = Color(0xFFCAFF69), fontWeight = FontWeight.Bold)
+                }
                 Spacer(Modifier.height(6.dp))
                 Text(job.description, maxLines = 3, overflow = TextOverflow.Ellipsis, color = Color.White.copy(alpha = .92f))
                 if (job.skills.isNotEmpty()) {
-                    Spacer(Modifier.height(7.dp)); Text(job.skills.joinToString("  •  "), fontSize = 12.sp, color = Color(0xFFD6FAFF))
+                    Spacer(Modifier.height(7.dp))
+                    Text(job.skills.joinToString("  •  "), fontSize = 12.sp, color = Color(0xFFD6FAFF))
                 }
                 Spacer(Modifier.height(6.dp))
                 Text("${job.source} · ${job.sourceIdLabel}: ${job.sourceIdValue}", fontSize = 11.sp, color = Color(0xFFB9EFFF))
@@ -142,7 +146,11 @@ private fun JobCard(job: Job, onStatus: (String, ReviewStatus) -> Unit) {
 @Composable
 private fun RulesScreen(rules: List<MarketRule>, onUpdate: (MarketRule) -> Unit, modifier: Modifier = Modifier) {
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Spacer(Modifier.height(8.dp)); Text("Market Dial", fontSize = 30.sp, fontWeight = FontWeight.Black); Text("Negotiate with the market instead of hard-coding your mood.", color = Color(0xFFD7F8FF)) }
+        item {
+            Spacer(Modifier.height(8.dp))
+            Text("Market Dial", fontSize = 30.sp, fontWeight = FontWeight.Black)
+            Text("Negotiate with the market instead of hard-coding your mood.", color = Color(0xFFD7F8FF))
+        }
         items(rules, key = { it.id }) { rule -> RuleEditor(rule, onUpdate) }
     }
 }
@@ -156,12 +164,12 @@ private fun RuleEditor(rule: MarketRule, onUpdate: (MarketRule) -> Unit) {
                 Text(rule.name, fontWeight = FontWeight.Bold, fontSize = 17.sp)
                 Text("${rule.kind.name.lowercase()} · ${rule.field} · ${rule.operator}", color = Color(0xFFBDF5FF), fontSize = 12.sp)
             }
-            Switch(rule.enabled, { onUpdate(rule.copy(enabled = it)) })
+            Switch(checked = rule.enabled, onCheckedChange = { onUpdate(rule.copy(enabled = it)) })
         }
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(value, { value = it }, label = { Text("Value / range / options") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        OutlinedTextField(value = value, onValueChange = { value = it }, label = { Text("Value / range / options") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(rule.allowUnknown, { onUpdate(rule.copy(allowUnknown = it)) })
+            Checkbox(checked = rule.allowUnknown, onCheckedChange = { onUpdate(rule.copy(allowUnknown = it)) })
             Text("Allow unknown")
             Spacer(Modifier.weight(1f))
             Button(onClick = { onUpdate(rule.copy(value = value)) }) { Text("Apply") }
@@ -173,13 +181,16 @@ private fun RuleEditor(rule: MarketRule, onUpdate: (MarketRule) -> Unit) {
 private fun SettingsScreen(apiUrl: String, onApiUrl: (String) -> Unit, modifier: Modifier = Modifier) {
     var draft by remember(apiUrl) { mutableStateOf(apiUrl) }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Spacer(Modifier.height(8.dp)); Text("Settings", fontSize = 30.sp, fontWeight = FontWeight.Black) }
+        item {
+            Spacer(Modifier.height(8.dp))
+            Text("Settings", fontSize = 30.sp, fontWeight = FontWeight.Black)
+        }
         item {
             GlassPanel {
                 Text("PaidIn server", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Text("The app works locally now; this address is ready for API sync work.", color = Color(0xFFD5F7FF))
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(draft, { draft = it }, label = { Text("Base URL") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = draft, onValueChange = { draft = it }, label = { Text("Base URL") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 Spacer(Modifier.height(8.dp))
                 Button(onClick = { onApiUrl(draft.trim()) }) { Text("Save server") }
             }
