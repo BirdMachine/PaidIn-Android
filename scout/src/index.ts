@@ -4,6 +4,8 @@ interface Env {
   OPENAI_API_KEY: string;
   SCOUT_TOKEN: string;
   SCOUT_MODEL?: string;
+  SCOUT_TIMEZONE?: string;
+  SCOUT_HOUR?: string;
 }
 
 type ScoutJob = {
@@ -63,7 +65,8 @@ export default {
     return env.ASSETS.fetch(request);
   },
 
-  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    if (!isConfiguredLocalHour(controller.scheduledTime, env)) return;
     ctx.waitUntil(
       runScan(env, "scheduled").then(async response => {
         if (!response.ok) console.error("Scheduled Scout scan failed:", await response.text());
@@ -77,6 +80,18 @@ function authorized(request: Request, env: Env): boolean {
   const bearer = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   const alternate = request.headers.get("x-scout-token");
   return bearer === env.SCOUT_TOKEN || alternate === env.SCOUT_TOKEN;
+}
+
+function isConfiguredLocalHour(scheduledTime: number, env: Env): boolean {
+  const timeZone = env.SCOUT_TIMEZONE || "America/New_York";
+  const targetHour = Math.max(0, Math.min(23, Number(env.SCOUT_HOUR ?? "9")));
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(scheduledTime));
+  const localHour = Number(parts.find(part => part.type === "hour")?.value ?? "-1");
+  return localHour === targetHour;
 }
 
 async function getJobs(env: Env): Promise<Response> {
