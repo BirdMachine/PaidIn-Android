@@ -11,7 +11,7 @@ Mallard, Kestrel, and the Android app are clients. None of them need to stay pow
 - **OpenAI Responses API** — live web search + structured job-feed output; no site-specific scraper code
 - **Android app / browser** — interchangeable review clients
 
-The default cron is `0 13 * * *`, which is 9 AM Pittsburgh during EDT and 8 AM during EST because Cloudflare cron schedules use UTC.
+The default schedule stays at **9:00 AM America/New_York year-round**. Cloudflare Cron Triggers execute in UTC, so Wrangler registers both `0 13 * * *` and `0 14 * * *`; the scheduled handler checks the configured local timezone/hour and only the matching invocation actually runs a scan. Change `SCOUT_TIMEZONE` / `SCOUT_HOUR` if desired.
 
 ## First deployment
 
@@ -69,7 +69,8 @@ All `/api/*` routes except `/api/health` require `Authorization: Bearer <SCOUT_T
 - `POST /api/scan`
 - `GET /api/settings`
 - `PUT /api/settings`
-- `PATCH /api/jobs/:id/status`
+- `PATCH /api/jobs/:id/status` (web client)
+- `POST /api/jobs/:id/status` (Android-compatible equivalent)
 - `GET /api/scan-runs`
 
 ## Cost shape
