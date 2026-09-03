@@ -1,4 +1,4 @@
-name: Android APK
+name: PaidIn Android + Scout
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  android:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,3 +25,18 @@ jobs:
           name: PaidIn-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+  scout:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scout
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Scout tooling
+        run: npm install
+      - name: Typecheck Scout worker
+        run: npm run typecheck
