@@ -11,7 +11,7 @@
     "db:init:remote": "wrangler d1 execute paidin-scout --remote --file=./schema.sql"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4",
+    "@cloudflare/workers-types": "^5",
     "typescript": "^5",
     "wrangler": "^4"
   }
