@@ -49,7 +49,7 @@ export default {
         if (url.pathname === "/api/scan-runs" && request.method === "GET") return getScanRuns(env);
 
         const statusMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)\/status$/);
-        if (statusMatch && request.method === "PATCH") {
+        if (statusMatch && (request.method === "PATCH" || request.method === "POST")) {
           return setJobStatus(decodeURIComponent(statusMatch[1]), request, env);
         }
 
