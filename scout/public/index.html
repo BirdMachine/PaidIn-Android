@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#006bd6" />
+  <title>PaidIn Scout</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: #f7ffff;
+      background:
+        radial-gradient(circle at 15% 10%, #a7ffdf55, transparent 28rem),
+        radial-gradient(circle at 85% 20%, #7de9ff66, transparent 30rem),
+        linear-gradient(160deg, #22b9db 0%, #0878d5 35%, #004d9e 68%, #00336e 100%);
+      background-attachment: fixed;
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .18;
+      background: radial-gradient(ellipse at 50% -10%, white 0 6%, transparent 7% 100%);
+    }
+    main { width: min(1100px, calc(100% - 24px)); margin: 0 auto; padding: 22px 0 70px; }
+    header { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    h1 { margin: 0; font-size: clamp(2rem, 7vw, 3.4rem); line-height: .95; text-shadow: 0 3px 20px #003d80; }
+    .tag { color: #d5ffff; font-weight: 700; margin-top: 8px; }
+    .glass {
+      background: linear-gradient(145deg, #efffff50, #2bd9f02c 45%, #0051a85c);
+      border: 1px solid #ffffffb5; border-radius: 24px; box-shadow: 0 16px 50px #002b6733;
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    }
+    .toolbar { padding: 13px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    button, input, textarea, select { font: inherit; }
+    button {
+      border: 1px solid #ffffffbb; color: white; cursor: pointer; border-radius: 999px; padding: 10px 15px;
+      background: linear-gradient(145deg, #7bf9f699, #047ad9cc); font-weight: 800;
+    }
+    button:hover { filter: brightness(1.08); }
+    button:disabled { opacity: .55; cursor: progress; }
+    button.secondary { background: #00529b77; }
+    button.danger { background: #c1345977; }
+    .status { margin-left: auto; font-size: .92rem; color: #d8ffff; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+    .metric { padding: 14px 16px; }
+    .metric strong { font-size: 1.75rem; display: block; }
+    .metric span { color: #d2fbff; font-size: .85rem; }
+    details { margin: 12px 0; }
+    details > summary { cursor: pointer; padding: 14px 16px; font-weight: 900; }
+    .settings { padding: 0 16px 16px; }
+    label { display: block; color: #dbffff; font-size: .85rem; font-weight: 800; margin: 8px 0 5px; }
+    textarea, input {
+      width: 100%; border-radius: 14px; border: 1px solid #ffffff99; padding: 11px 12px;
+      color: white; background: #003b7566; outline: none;
+    }
+    textarea { min-height: 150px; resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 120px; gap: 10px; }
+    #jobs { display: grid; gap: 12px; }
+    .job { padding: 16px; }
+    .job-top { display: grid; grid-template-columns: 70px 1fr; gap: 14px; align-items: start; }
+    .score {
+      width: 68px; height: 68px; border-radius: 50%; display: grid; place-items: center; font-weight: 1000;
+      color: #003e58; border: 1px solid white; background: radial-gradient(circle at 35% 25%, white, #bbff57 32%, #34e6da 60%, #168dde);
+    }
+    .job h2 { margin: 0 0 4px; font-size: 1.2rem; }
+    .company { color: #bfffff; font-weight: 800; }
+    .meta, .skills, .source { color: #d6f9ff; font-size: .87rem; }
+    .fit { margin: 9px 0; font-weight: 700; color: #eaffba; }
+    .desc { opacity: .94; }
+    .actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+    .actions a { text-decoration: none; }
+    .empty { padding: 28px; text-align: center; color: #e4ffff; }
+    .pill { display: inline-block; border: 1px solid #ffffff88; border-radius: 999px; padding: 4px 9px; font-size: .78rem; margin-left: 4px; }
+    @media (max-width: 600px) {
+      main { width: min(100% - 14px, 1100px); padding-top: 14px; }
+      header { align-items: start; flex-direction: column; }
+      .metrics { grid-template-columns: 1fr 1fr 1fr; }
+      .metric { padding: 11px; }
+      .metric strong { font-size: 1.35rem; }
+      .row { grid-template-columns: 1fr; }
+      .job-top { grid-template-columns: 58px 1fr; gap: 10px; }
+      .score { width: 56px; height: 56px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>PaidIn Scout 🐬</h1>
+      <div class="tag">Wide Net. Clear Signal. No desktop brain required.</div>
+    </div>
+  </header>
+
+  <section class="glass toolbar">
+    <button id="scan">Run Scout now</button>
+    <button id="reload" class="secondary">Refresh feed</button>
+    <span id="status" class="status">Not connected</span>
+  </section>
+
+  <section class="metrics">
+    <div class="glass metric"><strong id="m-total">–</strong><span>discovered</span></div>
+    <div class="glass metric"><strong id="m-strong">–</strong><span>strong fits</span></div>
+    <div class="glass metric"><strong id="m-saved">–</strong><span>saved</span></div>
+  </section>
+
+  <details class="glass" id="settings-panel">
+    <summary>Scout settings & access</summary>
+    <div class="settings">
+      <label for="token">Scout access token</label>
+      <input id="token" type="password" autocomplete="current-password" placeholder="Stored only in this browser" />
+      <div class="row">
+        <div>
+          <label for="brief">Search brief</label>
+          <textarea id="brief" placeholder="Describe the roles, locations, must-haves, deal-breakers, salary preferences, and adjacent roles Scout should consider."></textarea>
+        </div>
+        <div>
+          <label for="count">Per scan</label>
+          <input id="count" type="number" min="3" max="30" value="15" />
+        </div>
+      </div>
+      <div class="actions">
+        <button id="save">Save settings</button>
+        <button id="forget" class="secondary">Forget token</button>
+      </div>
+    </div>
+  </details>
+
+  <section id="jobs"><div class="glass empty">Add your Scout token and search brief, then send the dolphins hunting. 🐬✨</div></section>
+</main>
+<script>
+  const $ = id => document.getElementById(id);
+  const state = { jobs: [], token: localStorage.getItem('paidinScoutToken') || '' };
+  $('token').value = state.token;
+
+  function headers(json = false) {
+    const h = { Authorization: `Bearer ${state.token}` };
+    if (json) h['Content-Type'] = 'application/json';
+    return h;
+  }
+
+  async function api(path, options = {}) {
+    const res = await fetch(path, { ...options, headers: { ...headers(Boolean(options.body)), ...(options.headers || {}) } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `${res.status} ${res.statusText}`);
+    return data;
+  }
+
+  function setStatus(text, bad = false) {
+    $('status').textContent = text;
+    $('status').style.color = bad ? '#ffd0d7' : '#d8ffff';
+  }
+
+  async function loadSettings() {
+    if (!state.token) return;
+    const data = await api('/api/settings');
+    $('brief').value = data.searchBrief || '';
+    $('count').value = data.resultCount || 15;
+  }
+
+  async function loadJobs() {
+    if (!state.token) { setStatus('Add access token'); return; }
+    setStatus('Loading…');
+    try {
+      const data = await api('/api/jobs');
+      state.jobs = data.jobs || [];
+      renderJobs();
+      setStatus(`Updated ${new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`);
+    } catch (e) {
+      setStatus(e.message, true);
+      if (/Unauthorized/i.test(e.message)) $('settings-panel').open = true;
+    }
+  }
+
+  function money(job) {
+    if (job.salaryMin == null && job.salaryMax == null) return '';
+    const f = n => `$${Number(n).toLocaleString()}`;
+    if (job.salaryMin != null && job.salaryMax != null) return `${f(job.salaryMin)}–${f(job.salaryMax)}`;
+    return job.salaryMin != null ? `From ${f(job.salaryMin)}` : `Up to ${f(job.salaryMax)}`;
+  }
+
+  function esc(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  }
+
+  function renderJobs() {
+    const jobs = state.jobs;
+    $('m-total').textContent = jobs.length;
+    $('m-strong').textContent = jobs.filter(j => j.score >= 80).length;
+    $('m-saved').textContent = jobs.filter(j => j.status === 'SAVED').length;
+    if (!jobs.length) {
+      $('jobs').innerHTML = '<div class="glass empty">No jobs yet. Run Scout now, or let the morning cron bring breakfast. 🌊</div>';
+      return;
+    }
+    $('jobs').innerHTML = jobs.map(job => `
+      <article class="glass job">
+        <div class="job-top">
+          <div class="score">${esc(job.score)}%</div>
+          <div>
+            <h2>${esc(job.title)}</h2>
+            <div class="company">${esc(job.company)}</div>
+            <div class="meta">${esc(job.location)} · ${esc(job.remoteStatus)} ${money(job) ? '· ' + esc(money(job)) : ''}</div>
+            <div class="fit">${esc(job.fitSummary)}</div>
+            <div class="desc">${esc(job.description)}</div>
+            ${job.skills?.length ? `<div class="skills">${job.skills.map(esc).join(' · ')}</div>` : ''}
+            <div class="source">${esc(job.source)} <span class="pill">${esc(job.status)}</span></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button onclick="setJob('${encodeURIComponent(job.id)}','SAVED')">Save</button>
+          <button onclick="setJob('${encodeURIComponent(job.id)}','APPROVED')">Approve</button>
+          <button class="danger" onclick="setJob('${encodeURIComponent(job.id)}','REJECTED')">Reject</button>
+          <a href="${esc(job.sourceUrl)}" target="_blank" rel="noopener noreferrer"><button class="secondary">Open listing ↗</button></a>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  window.setJob = async (encodedId, status) => {
+    try {
+      await api(`/api/jobs/${encodedId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+      const id = decodeURIComponent(encodedId);
+      state.jobs = state.jobs.map(j => j.id === id ? { ...j, status } : j);
+      renderJobs();
+    } catch (e) { setStatus(e.message, true); }
+  };
+
+  $('save').onclick = async () => {
+    state.token = $('token').value.trim();
+    localStorage.setItem('paidinScoutToken', state.token);
+    try {
+      await api('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify({ searchBrief: $('brief').value.trim(), resultCount: Number($('count').value) || 15 })
+      });
+      setStatus('Settings saved');
+      await loadJobs();
+    } catch (e) { setStatus(e.message, true); }
+  };
+
+  $('forget').onclick = () => {
+    state.token = '';
+    $('token').value = '';
+    localStorage.removeItem('paidinScoutToken');
+    setStatus('Token forgotten');
+  };
+
+  $('reload').onclick = loadJobs;
+  $('scan').onclick = async () => {
+    const button = $('scan'); button.disabled = true; setStatus('Scout is searching…');
+    try {
+      const data = await api('/api/scan', { method: 'POST' });
+      setStatus(`Found ${data.jobsFound} listing${data.jobsFound === 1 ? '' : 's'}`);
+      await loadJobs();
+    } catch (e) { setStatus(e.message, true); }
+    finally { button.disabled = false; }
+  };
+
+  if (state.token) {
+    Promise.allSettled([loadSettings(), loadJobs()]);
+  } else {
+    $('settings-panel').open = true;
+  }
+</script>
+</body>
+</html>
