@@ -52,7 +52,7 @@ class PaidInViewModel(app: Application) : AndroidViewModel(app) {
             viewModelScope.launch(Dispatchers.IO) {
                 runCatching {
                     request(
-                        method = "PATCH",
+                        method = "POST",
                         path = "/api/jobs/${java.net.URLEncoder.encode(id, Charsets.UTF_8.name())}/status",
                         body = JSONObject().put("status", status.name).toString(),
                     )
@@ -109,8 +109,9 @@ class PaidInViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun refreshScoutInternal() {
         val payload = withContext(Dispatchers.IO) { request("GET", "/api/jobs") }
         val remote = parseScoutJobs(payload)
+        val localShared = _jobs.value.filter { it.id.startsWith("shared-") }
         prefs.edit().putString("scout_cache", payload).apply()
-        _jobs.value = remote
+        _jobs.value = localShared + remote
         _syncMessage.value = "Cloud Scout synced · ${remote.size} listings"
     }
 
