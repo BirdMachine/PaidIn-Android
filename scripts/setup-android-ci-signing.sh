@@ -5,7 +5,8 @@ REPO="BirdMachine/PaidIn-Android"
 BRANCH="scout-feed"
 KEY_DIR="$HOME/.config/paidin-scout"
 KEYSTORE="$KEY_DIR/android-ci-debug.keystore"
-ANDROID_KEYSTORE="$HOME/.android/debug.keystore"
+SIGNING_ENV="$KEY_DIR/android-signing.env"
+ZSHRC="$HOME/.zshrc"
 ALIAS="androiddebugkey"
 STOREPASS="android"
 KEYPASS="android"
@@ -32,8 +33,8 @@ auth_github() {
 }
 
 make_key() {
-  mkdir -p "$KEY_DIR" "$HOME/.android"
-  chmod 700 "$KEY_DIR" "$HOME/.android"
+  mkdir -p "$KEY_DIR"
+  chmod 700 "$KEY_DIR"
 
   if [[ ! -f "$KEYSTORE" ]]; then
     say "Generating PaidIn's persistent debug signing key"
@@ -51,10 +52,22 @@ make_key() {
   else
     say "Reusing existing PaidIn signing key: $KEYSTORE"
   fi
+}
 
-  # Keep Mallard's local debug builds signed identically to CI.
-  cp "$KEYSTORE" "$ANDROID_KEYSTORE"
-  chmod 600 "$ANDROID_KEYSTORE"
+configure_local_build() {
+  say "Configuring Mallard to use PaidIn's project-specific signing key"
+  printf 'export PAIDIN_DEBUG_KEYSTORE=%q\n' "$KEYSTORE" > "$SIGNING_ENV"
+  chmod 600 "$SIGNING_ENV"
+
+  touch "$ZSHRC"
+  local source_line='[[ -r "$HOME/.config/paidin-scout/android-signing.env" ]] && source "$HOME/.config/paidin-scout/android-signing.env"'
+  if ! grep -Fqs 'paidin-scout/android-signing.env' "$ZSHRC"; then
+    printf '\n# PaidIn Android project-specific debug signing\n%s\n' "$source_line" >> "$ZSHRC"
+  fi
+
+  export PAIDIN_DEBUG_KEYSTORE="$KEYSTORE"
+  printf '    ✓ PaidIn local builds use %s\n' "$KEYSTORE"
+  printf '    ✓ ~/.android/debug.keystore was left untouched for Keywi/Fishwi/other projects\n'
 }
 
 upload_secret() {
@@ -70,6 +83,7 @@ trigger_build() {
   printf 'IMPORTANT: uninstall the currently installed randomly-signed PaidIn APK ONCE, then install the next CI APK.\n'
   printf 'Every subsequent APK built with this secret can update that installation in place.\n'
   printf '\nSigning key backup (keep this file safe):\n  %s\n' "$KEYSTORE"
+  printf '\nLocal signing environment:\n  %s\n' "$SIGNING_ENV"
   printf '\nTo watch the new workflow run:\n  gh run list --repo %s --workflow android.yml --limit 3\n' "$REPO"
 }
 
@@ -78,6 +92,7 @@ main() {
   ensure_tools
   auth_github
   make_key
+  configure_local_build
   upload_secret
   trigger_build
 }
