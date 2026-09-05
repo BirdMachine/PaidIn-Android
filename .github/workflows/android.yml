@@ -58,6 +58,15 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: gradle
+      - name: Enable KVM acceleration
+        run: |
+          if [[ -e /dev/kvm ]]; then
+            sudo chmod 666 /dev/kvm
+            echo "KVM enabled for Android emulator:"
+            ls -l /dev/kvm
+          else
+            echo "::warning::/dev/kvm is unavailable; emulator may fall back to slow software emulation."
+          fi
       - name: Launch PaidIn on Android 15 and run startup smoke tests
         uses: reactivecircus/android-emulator-runner@v2.38.0
         with:
@@ -67,6 +76,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
           script: ./gradlew --no-daemon connectedDebugAndroidTest
       - name: Upload instrumented-test reports on failure
         if: failure()
