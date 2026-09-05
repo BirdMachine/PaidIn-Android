@@ -8,6 +8,19 @@ android {
     namespace = "com.birdmachine.paidin"
     compileSdk = 35
 
+    signingConfigs {
+        getByName("debug") {
+            System.getenv("PAIDIN_DEBUG_KEYSTORE")
+                ?.takeIf { it.isNotBlank() }
+                ?.let { path ->
+                    storeFile = file(path)
+                    storePassword = System.getenv("PAIDIN_KEYSTORE_PASSWORD") ?: "android"
+                    keyAlias = System.getenv("PAIDIN_KEY_ALIAS") ?: "androiddebugkey"
+                    keyPassword = System.getenv("PAIDIN_KEY_PASSWORD") ?: "android"
+                }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.birdmachine.paidin"
         minSdk = 26
