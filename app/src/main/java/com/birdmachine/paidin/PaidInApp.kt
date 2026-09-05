@@ -2,7 +2,6 @@ package com.birdmachine.paidin
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -19,9 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,10 +38,20 @@ fun PaidInApp(vm: PaidInViewModel) {
     val syncing by vm.syncing.collectAsStateWithLifecycle()
     val syncMessage by vm.syncMessage.collectAsStateWithLifecycle()
 
-    Box(Modifier.fillMaxSize()) {
-        Image(painterResource(R.drawable.ocean_dolphin), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x22004AA0), Color(0x66001B58)))))
-
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF0077C8),
+                        Color(0xFF005B9F),
+                        Color(0xFF00366D),
+                        Color(0xFF001B4D),
+                    )
+                )
+            )
+    ) {
         Scaffold(
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets.safeDrawing,
