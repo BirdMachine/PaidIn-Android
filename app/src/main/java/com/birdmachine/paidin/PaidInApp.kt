@@ -2,7 +2,6 @@ package com.birdmachine.paidin
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -19,10 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,11 +34,24 @@ fun PaidInApp(vm: PaidInViewModel) {
     val jobs by vm.jobs.collectAsStateWithLifecycle()
     val rules by vm.rules.collectAsStateWithLifecycle()
     val apiUrl by vm.apiUrl.collectAsStateWithLifecycle()
+    val scoutToken by vm.scoutToken.collectAsStateWithLifecycle()
+    val syncing by vm.syncing.collectAsStateWithLifecycle()
+    val syncMessage by vm.syncMessage.collectAsStateWithLifecycle()
 
-    Box(Modifier.fillMaxSize()) {
-        Image(painterResource(R.drawable.ocean_dolphin), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x22004AA0), Color(0x66001B58)))))
-
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF0077C8),
+                        Color(0xFF005B9F),
+                        Color(0xFF00366D),
+                        Color(0xFF001B4D),
+                    )
+                )
+            )
+    ) {
         Scaffold(
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets.safeDrawing,
@@ -55,21 +66,43 @@ fun PaidInApp(vm: PaidInViewModel) {
             }
         ) { padding ->
             when (tab) {
-                Tab.RADAR -> RadarScreen(jobs, vm::setStatus, Modifier.padding(padding))
+                Tab.RADAR -> RadarScreen(
+                    jobs = jobs,
+                    syncing = syncing,
+                    syncMessage = syncMessage,
+                    onRefresh = vm::refreshScout,
+                    onScan = vm::runScoutNow,
+                    onStatus = vm::setStatus,
+                    modifier = Modifier.padding(padding),
+                )
                 Tab.RULES -> RulesScreen(rules, vm::upsertRule, Modifier.padding(padding))
-                Tab.SETTINGS -> SettingsScreen(apiUrl, vm::setApiUrl, Modifier.padding(padding))
+                Tab.SETTINGS -> SettingsScreen(
+                    apiUrl = apiUrl,
+                    scoutToken = scoutToken,
+                    onApiUrl = vm::setApiUrl,
+                    onScoutToken = vm::setScoutToken,
+                    modifier = Modifier.padding(padding),
+                )
             }
         }
     }
 }
 
 @Composable
-private fun RadarScreen(jobs: List<Job>, onStatus: (String, ReviewStatus) -> Unit, modifier: Modifier = Modifier) {
+private fun RadarScreen(
+    jobs: List<Job>,
+    syncing: Boolean,
+    syncMessage: String,
+    onRefresh: () -> Unit,
+    onScan: () -> Unit,
+    onStatus: (String, ReviewStatus) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val strong = jobs.count { it.score >= 80 }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Spacer(Modifier.height(8.dp))
-            Text("PaidIn", fontSize = 34.sp, fontWeight = FontWeight.Black, color = Color.White)
+            Text("PaidIn Scout", fontSize = 34.sp, fontWeight = FontWeight.Black, color = Color.White)
             Text("Wide Net. Clear Signal. 🐬", color = Color(0xFFD9FAFF), fontWeight = FontWeight.SemiBold)
         }
         item {
@@ -86,8 +119,21 @@ private fun RadarScreen(jobs: List<Job>, onStatus: (String, ReviewStatus) -> Uni
                         Icon(Icons.Default.Radar, null, tint = Color(0xFF003C73), modifier = Modifier.size(36.dp))
                     }
                     Column(Modifier.weight(1f)) {
-                        Text("Market Radar", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                        Text("Local review queue is ready. Server scanning plugs in next.", color = Color(0xFFD5F7FF))
+                        Text("Cloud Market Radar", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Text(syncMessage, color = Color(0xFFD5F7FF))
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onScan, enabled = !syncing) {
+                        Icon(Icons.Default.TravelExplore, null)
+                        Spacer(Modifier.width(6.dp))
+                        Text(if (syncing) "Working…" else "Run Scout")
+                    }
+                    FilledTonalButton(onClick = onRefresh, enabled = !syncing) {
+                        Icon(Icons.Default.Refresh, null)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Refresh")
                     }
                 }
             }
@@ -119,6 +165,10 @@ private fun JobCard(job: Job, onStatus: (String, ReviewStatus) -> Unit) {
                 job.salaryMax?.let { max ->
                     Text("\$${job.salaryMin ?: 0}–\$$max", color = Color(0xFFCAFF69), fontWeight = FontWeight.Bold)
                 }
+                job.fitSummary?.let {
+                    Spacer(Modifier.height(6.dp))
+                    Text(it, color = Color(0xFFE9FFAF), fontWeight = FontWeight.SemiBold)
+                }
                 Spacer(Modifier.height(6.dp))
                 Text(job.description, maxLines = 3, overflow = TextOverflow.Ellipsis, color = Color.White.copy(alpha = .92f))
                 if (job.skills.isNotEmpty()) {
@@ -126,7 +176,7 @@ private fun JobCard(job: Job, onStatus: (String, ReviewStatus) -> Unit) {
                     Text(job.skills.joinToString("  •  "), fontSize = 12.sp, color = Color(0xFFD6FAFF))
                 }
                 Spacer(Modifier.height(6.dp))
-                Text("${job.source} · ${job.sourceIdLabel}: ${job.sourceIdValue}", fontSize = 11.sp, color = Color(0xFFB9EFFF))
+                Text("${job.source} · ${job.sourceIdLabel}: ${job.sourceIdValue}", fontSize = 11.sp, color = Color(0xFFB9EFFF), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         Spacer(Modifier.height(10.dp))
@@ -178,8 +228,15 @@ private fun RuleEditor(rule: MarketRule, onUpdate: (MarketRule) -> Unit) {
 }
 
 @Composable
-private fun SettingsScreen(apiUrl: String, onApiUrl: (String) -> Unit, modifier: Modifier = Modifier) {
-    var draft by remember(apiUrl) { mutableStateOf(apiUrl) }
+private fun SettingsScreen(
+    apiUrl: String,
+    scoutToken: String,
+    onApiUrl: (String) -> Unit,
+    onScoutToken: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var draftUrl by remember(apiUrl) { mutableStateOf(apiUrl) }
+    var draftToken by remember(scoutToken) { mutableStateOf(scoutToken) }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Spacer(Modifier.height(8.dp))
@@ -187,12 +244,24 @@ private fun SettingsScreen(apiUrl: String, onApiUrl: (String) -> Unit, modifier:
         }
         item {
             GlassPanel {
-                Text("PaidIn server", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("The app works locally now; this address is ready for API sync work.", color = Color(0xFFD5F7FF))
+                Text("Cloud Scout", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("The hosted Scout keeps hunting even when Mallard and your phone are asleep. The Android app is just one client of the same feed.", color = Color(0xFFD5F7FF))
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(value = draft, onValueChange = { draft = it }, label = { Text("Base URL") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = draftUrl, onValueChange = { draftUrl = it }, label = { Text("Scout base URL") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 Spacer(Modifier.height(8.dp))
-                Button(onClick = { onApiUrl(draft.trim()) }) { Text("Save server") }
+                OutlinedTextField(
+                    value = draftToken,
+                    onValueChange = { draftToken = it },
+                    label = { Text("Scout access token") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(8.dp))
+                Button(onClick = {
+                    onApiUrl(draftUrl.trim())
+                    onScoutToken(draftToken.trim())
+                }) { Text("Save Scout connection") }
             }
         }
         item {

@@ -1,19 +1,31 @@
-# PaidIn Android 🐬🌊
+# PaidIn Android + Scout 🐬🌊
 
-Native Android review cockpit for PaidIn, built with Kotlin + Jetpack Compose.
+PaidIn is a job-discovery and review cockpit with two interchangeable front doors:
 
-## Current MVP
+- a native Kotlin / Jetpack Compose Android app
+- a responsive browser portal served by the always-on PaidIn Scout service
 
-- Ocean Dolphin Aero UI with a clean, UI-free ocean/dolphin wallpaper
-- Seeded review queue and match scores
-- Save / Approve / Reject state persisted locally
-- Editable Market Dial rules (qualifiers, disqualifiers, preferences)
-- Android Share-sheet intake: share a job URL from your browser directly into PaidIn
-- Configurable PaidIn API base URL, ready for sync wiring
-- Offline-first behavior for the current local feature set
-- GitHub Actions debug APK build
+The Scout service does the scheduled job hunting in the cloud, so Mallard, Kestrel, and the Android app can all be powered off and the morning scan still happens.
 
-## Build
+## Current Scout MVP
+
+- Ocean Dolphin Aero Android UI
+- Cloud-backed job feed with local Android caching for offline review
+- Manual **Run Scout** and **Refresh** controls in Android
+- Responsive web portal for phone, tablet, or desktop review
+- Save / Approve / Reject state shared through the Scout API
+- Editable search brief in the web portal
+- Daily scheduled job discovery
+- OpenAI Responses API built-in web search instead of site-specific scraper maintenance
+- Structured normalized listings with score, fit summary, provenance URL, salary/location unknown handling, and skills
+- Cloudflare Worker API + static portal
+- Cloudflare D1 persistence
+- Android Share-sheet intake remains available for manually spotted listings
+- GitHub Actions checks both Android and Scout TypeScript
+
+The server-side implementation lives in [`scout/`](./scout/README.md).
+
+## Android build
 
 Requires JDK 17 and Android SDK 35.
 
@@ -29,8 +41,19 @@ app/build/outputs/apk/debug/app-debug.apk
 
 If you don't have Gradle installed, the included `gradlew` bootstrap downloads Gradle 8.9 into `.gradle-dist/` on first use.
 
-## On-device flow
+## Android connection
 
-Open PaidIn to browse the seeded queue. From Chrome/Firefox/another browser, use **Share → PaidIn** on a job URL to create a pending-extraction entry locally.
+After Scout is deployed, open **PaidIn → Settings → Cloud Scout** and enter:
 
-The next development slice is API sync with the existing FastAPI PaidIn server, followed by real normalized job ingestion and Room-backed persistence.
+1. the HTTPS Worker base URL
+2. the same `SCOUT_TOKEN` configured as a Worker secret
+
+The OpenAI API key is never stored in the Android app or browser.
+
+## Browser flow
+
+Open the deployed Scout URL from any device. Enter the Scout access token once, save the search brief, and review the exact same cloud queue the Android app sees.
+
+## Human-in-the-loop rule
+
+PaidIn discovers, scores, explains, and organizes. Save / Approve / Reject remains human-controlled; the project does not mass auto-apply.

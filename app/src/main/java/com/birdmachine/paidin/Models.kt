@@ -19,6 +19,7 @@ data class Job(
     val score: Int,
     val status: ReviewStatus = ReviewStatus.NEW,
     val importedUrl: String? = null,
+    val fitSummary: String? = null,
 )
 
 data class MarketRule(

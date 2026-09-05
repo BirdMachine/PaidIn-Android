@@ -8,12 +8,26 @@ android {
     namespace = "com.birdmachine.paidin"
     compileSdk = 35
 
+    signingConfigs {
+        getByName("debug") {
+            System.getenv("PAIDIN_DEBUG_KEYSTORE")
+                ?.takeIf { it.isNotBlank() }
+                ?.let { path ->
+                    storeFile = file(path)
+                    storePassword = System.getenv("PAIDIN_KEYSTORE_PASSWORD") ?: "android"
+                    keyAlias = System.getenv("PAIDIN_KEY_ALIAS") ?: "androiddebugkey"
+                    keyPassword = System.getenv("PAIDIN_KEY_PASSWORD") ?: "android"
+                }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.birdmachine.paidin"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = System.getenv("PAIDIN_VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = System.getenv("PAIDIN_VERSION_NAME") ?: "0.1.0-dev"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildFeatures { compose = true }
@@ -23,6 +37,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+
+    testOptions {
+        animationsDisabled = true
+    }
 
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -44,5 +62,11 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
+
+    androidTestImplementation("androidx.test:core-ktx:1.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
