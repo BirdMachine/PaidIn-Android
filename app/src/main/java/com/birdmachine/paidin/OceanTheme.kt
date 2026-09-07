@@ -5,18 +5,24 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val OceanScheme = darkColorScheme(
-    primary = Color(0xFF67F4FF),
-    onPrimary = Color(0xFF003A58),
-    secondary = Color(0xFFB8FF45),
-    tertiary = Color(0xFFFFF38A),
-    background = Color(0xFF006DC2),
-    surface = Color(0x550078C8),
+// Aqua Vista: modern glass with the optimistic, aquatic colour language of Frutiger Aero.
+private val AquaVistaScheme = darkColorScheme(
+    primary = Color(0xFF72F6FF),
+    onPrimary = Color(0xFF00384F),
+    primaryContainer = Color(0x6638D8F2),
+    secondary = Color(0xFFB9FF52),
+    onSecondary = Color(0xFF173900),
+    tertiary = Color(0xFFFFF29A),
+    background = Color(0xFF047DD0),
+    surface = Color(0x66317FC0),
+    surfaceVariant = Color(0x665DE6EF),
     onSurface = Color.White,
+    onSurfaceVariant = Color(0xFFE5FBFF),
     onBackground = Color.White,
+    outline = Color(0xCCEAFFFF),
 )
 
 @Composable
 fun PaidInTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = OceanScheme, typography = MaterialTheme.typography, content = content)
+    MaterialTheme(colorScheme = AquaVistaScheme, typography = MaterialTheme.typography, content = content)
 }
