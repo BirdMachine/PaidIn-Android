@@ -27,6 +27,7 @@ jobs:
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - name: Prepare PNG dolphin background
         run: |
+          mkdir -p app/src/main/res/drawable-nodpi
           rm -f app/src/main/res/drawable-nodpi/ocean_dolphin.webp
           base64 --decode assets-src/ocean_dolphin.png.b64 > app/src/main/res/drawable-nodpi/ocean_dolphin.png
           file app/src/main/res/drawable-nodpi/ocean_dolphin.png
