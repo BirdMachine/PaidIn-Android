@@ -42,6 +42,8 @@ fun PaidInApp(vm: PaidInViewModel) {
     val apiUrl by vm.apiUrl.collectAsStateWithLifecycle()
     val localLocation by vm.localLocation.collectAsStateWithLifecycle()
     val localRadiusMiles by vm.localRadiusMiles.collectAsStateWithLifecycle()
+    val scoutStatus by vm.scoutStatus.collectAsStateWithLifecycle()
+    val scoutRunning by vm.scoutRunning.collectAsStateWithLifecycle()
 
     Box(Modifier.fillMaxSize()) {
         Image(
@@ -68,7 +70,16 @@ fun PaidInApp(vm: PaidInViewModel) {
             }
         }) { padding ->
             when (tab) {
-                Tab.RADAR -> RadarScreen(jobs, vm::setStatus, Modifier.padding(padding))
+                Tab.RADAR -> RadarScreen(
+                    jobs = jobs,
+                    scoutStatus = scoutStatus,
+                    scoutRunning = scoutRunning,
+                    localLocation = localLocation,
+                    localRadiusMiles = localRadiusMiles,
+                    onRunScout = vm::runScout,
+                    onStatus = vm::setStatus,
+                    modifier = Modifier.padding(padding),
+                )
                 Tab.RULES -> RulesScreen(rules, vm::upsertRule, Modifier.padding(padding))
                 Tab.SETTINGS -> SettingsScreen(
                     apiUrl = apiUrl,
@@ -84,7 +95,16 @@ fun PaidInApp(vm: PaidInViewModel) {
 }
 
 @Composable
-private fun RadarScreen(jobs: List<Job>, onStatus: (String, ReviewStatus) -> Unit, modifier: Modifier = Modifier) {
+private fun RadarScreen(
+    jobs: List<Job>,
+    scoutStatus: String,
+    scoutRunning: Boolean,
+    localLocation: String,
+    localRadiusMiles: Int,
+    onRunScout: () -> Unit,
+    onStatus: (String, ReviewStatus) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val strong = jobs.count { it.score >= 80 }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         item {
@@ -102,12 +122,39 @@ private fun RadarScreen(jobs: List<Job>, onStatus: (String, ReviewStatus) -> Uni
         item {
             GlassPanel {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(13.dp)) {
-                    AeroOrb(64) { Icon(Icons.Default.Radar, null, tint = DeepSea, modifier = Modifier.size(36.dp)) }
+                    AeroOrb(64) {
+                        if (scoutRunning) {
+                            CircularProgressIndicator(modifier = Modifier.size(34.dp), strokeWidth = 4.dp, color = DeepSea)
+                        } else {
+                            Icon(Icons.Default.Radar, null, tint = DeepSea, modifier = Modifier.size(36.dp))
+                        }
+                    }
                     Column(Modifier.weight(1f)) {
                         Text("Cloud Market Radar", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                        Text("Local review queue is ready. Cloud Scout plugs in next.", color = Color(0xFFE2FCFF))
+                        Text(scoutStatus, color = Color(0xFFE2FCFF))
                     }
                 }
+                Spacer(Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text("Local: $localLocation · ${localRadiusMiles} mi", color = Color(0xFFE5FFFF), fontSize = 12.sp)
+                }
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onRunScout,
+                    enabled = !scoutRunning,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(if (scoutRunning) Icons.Default.HourglassTop else Icons.Default.Search, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (scoutRunning) "Scanning…" else "Run Scout")
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Live source: Remotive remote jobs. Results are cached on this phone; local-market collection is the next adapter.",
+                    color = Color(0xFFD9FAFF),
+                    fontSize = 11.sp,
+                )
             }
         }
         items(jobs, key = { it.id }) { job -> JobCard(job, onStatus) }
@@ -240,7 +287,7 @@ private fun SettingsScreen(
                 ) { Text("Save local area") }
             }
         }
-        item { GlassPanel { Text("PaidIn server", fontWeight = FontWeight.Bold, fontSize = 18.sp); Text("The app works locally now; this address is ready for API sync work.", color = Color(0xFFE0FAFF)); Spacer(Modifier.height(8.dp)); OutlinedTextField(value = draft, onValueChange = { draft = it }, label = { Text("Base URL") }, modifier = Modifier.fillMaxWidth(), singleLine = true); Spacer(Modifier.height(8.dp)); Button(onClick = { onApiUrl(draft.trim()) }) { Text("Save server") } } }
+        item { GlassPanel { Text("PaidIn server", fontWeight = FontWeight.Bold, fontSize = 18.sp); Text("Reserved for the hosted multi-source Scout service; live Remotive scanning works directly in this build.", color = Color(0xFFE0FAFF)); Spacer(Modifier.height(8.dp)); OutlinedTextField(value = draft, onValueChange = { draft = it }, label = { Text("Base URL") }, modifier = Modifier.fillMaxWidth(), singleLine = true); Spacer(Modifier.height(8.dp)); Button(onClick = { onApiUrl(draft.trim()) }) { Text("Save server") } } }
         item { GlassPanel { Text("Share-sheet intake", fontWeight = FontWeight.Bold, fontSize = 18.sp); Text("In any browser: Share → PaidIn. The URL becomes a local pending-extraction job immediately.", color = Color(0xFFE0FAFF)) } }
     }
 }
