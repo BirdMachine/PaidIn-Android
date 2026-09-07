@@ -2,7 +2,6 @@ package com.birdmachine.paidin
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -20,9 +19,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -31,7 +29,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 private enum class Tab(val label: String) { RADAR("Radar"), RULES("Market Dial"), SETTINGS("Settings") }
 private val Pearl = Color(0xFFF0FFFF)
-private val Aqua = Color(0xFF69F5FF)
 private val AeroGreen = Color(0xFFBEFF4D)
 private val DeepSea = Color(0xFF003C73)
 
@@ -42,9 +39,34 @@ fun PaidInApp(vm: PaidInViewModel) {
     val rules by vm.rules.collectAsStateWithLifecycle()
     val apiUrl by vm.apiUrl.collectAsStateWithLifecycle()
 
-    Box(Modifier.fillMaxSize()) {
-        Image(painterResource(R.drawable.ocean_dolphin), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x0800BFFF), Color(0x220078C8), Color(0x66001850)))))
+    Box(
+        Modifier.fillMaxSize().background(
+            Brush.verticalGradient(
+                listOf(
+                    Color(0xFF3BBEFF),
+                    Color(0xFF0AA5E8),
+                    Color(0xFF087AC7),
+                    Color(0xFF004B91)
+                )
+            )
+        )
+    ) {
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.radialGradient(
+                    colors = listOf(Color.White.copy(alpha = .55f), Color.Transparent),
+                    center = Offset(180f, 120f),
+                    radius = 520f
+                )
+            )
+        )
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.verticalGradient(
+                    listOf(Color.Transparent, Color(0x1800FFFF), Color(0x44001850))
+                )
+            )
+        )
 
         Scaffold(containerColor = Color.Transparent, contentWindowInsets = WindowInsets.safeDrawing, bottomBar = {
             GlassBar {
