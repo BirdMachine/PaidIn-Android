@@ -25,20 +25,11 @@ jobs:
           key: paidin-debug-keystore-v1
       - name: Install SDK 35
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
-      - name: Convert dolphin background to PNG
+      - name: Prepare PNG dolphin background
         run: |
-          python -m pip install --quiet pillow
-          python - <<'PY'
-          from pathlib import Path
-          from PIL import Image
-
-          src = Path('app/src/main/res/drawable-nodpi/ocean_dolphin.webp')
-          dst = src.with_suffix('.png')
-          with Image.open(src) as image:
-              image.convert('RGB').save(dst, 'PNG', optimize=True)
-          src.unlink()
-          print(f'Converted {dst}')
-          PY
+          rm -f app/src/main/res/drawable-nodpi/ocean_dolphin.webp
+          base64 --decode assets-src/ocean_dolphin.png.b64 > app/src/main/res/drawable-nodpi/ocean_dolphin.png
+          file app/src/main/res/drawable-nodpi/ocean_dolphin.png
       - name: Build debug APK
         run: ./gradlew --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
