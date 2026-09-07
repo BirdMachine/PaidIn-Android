@@ -21,6 +21,12 @@ class PaidInViewModel(app: Application) : AndroidViewModel(app) {
     private val _apiUrl = MutableStateFlow(prefs.getString("api_url", "http://10.0.2.2:8000") ?: "http://10.0.2.2:8000")
     val apiUrl: StateFlow<String> = _apiUrl
 
+    private val _localLocation = MutableStateFlow(prefs.getString("local_location", "Pittsburgh, PA") ?: "Pittsburgh, PA")
+    val localLocation: StateFlow<String> = _localLocation
+
+    private val _localRadiusMiles = MutableStateFlow(prefs.getInt("local_radius_miles", 25))
+    val localRadiusMiles: StateFlow<Int> = _localRadiusMiles
+
     fun setStatus(id: String, status: ReviewStatus) {
         _jobs.update { list -> list.map { if (it.id == id) it.copy(status = status) else it } }
         prefs.edit().putString("status_$id", status.name).apply()
@@ -33,6 +39,15 @@ class PaidInViewModel(app: Application) : AndroidViewModel(app) {
     fun setApiUrl(value: String) {
         _apiUrl.value = value
         prefs.edit().putString("api_url", value).apply()
+    }
+
+    fun setLocalSearch(location: String, radiusMiles: Int) {
+        _localLocation.value = location
+        _localRadiusMiles.value = radiusMiles.coerceIn(1, 250)
+        prefs.edit()
+            .putString("local_location", location)
+            .putInt("local_radius_miles", _localRadiusMiles.value)
+            .apply()
     }
 
     fun importSharedText(text: String) {
