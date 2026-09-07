@@ -40,6 +40,8 @@ fun PaidInApp(vm: PaidInViewModel) {
     val jobs by vm.jobs.collectAsStateWithLifecycle()
     val rules by vm.rules.collectAsStateWithLifecycle()
     val apiUrl by vm.apiUrl.collectAsStateWithLifecycle()
+    val localLocation by vm.localLocation.collectAsStateWithLifecycle()
+    val localRadiusMiles by vm.localRadiusMiles.collectAsStateWithLifecycle()
 
     Box(Modifier.fillMaxSize()) {
         Image(
@@ -68,7 +70,14 @@ fun PaidInApp(vm: PaidInViewModel) {
             when (tab) {
                 Tab.RADAR -> RadarScreen(jobs, vm::setStatus, Modifier.padding(padding))
                 Tab.RULES -> RulesScreen(rules, vm::upsertRule, Modifier.padding(padding))
-                Tab.SETTINGS -> SettingsScreen(apiUrl, vm::setApiUrl, Modifier.padding(padding))
+                Tab.SETTINGS -> SettingsScreen(
+                    apiUrl = apiUrl,
+                    localLocation = localLocation,
+                    localRadiusMiles = localRadiusMiles,
+                    onApiUrl = vm::setApiUrl,
+                    onLocalSearch = vm::setLocalSearch,
+                    modifier = Modifier.padding(padding),
+                )
             }
         }
     }
@@ -180,10 +189,57 @@ private fun RuleEditor(rule: MarketRule, onUpdate: (MarketRule) -> Unit) {
 }
 
 @Composable
-private fun SettingsScreen(apiUrl: String, onApiUrl: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun SettingsScreen(
+    apiUrl: String,
+    localLocation: String,
+    localRadiusMiles: Int,
+    onApiUrl: (String) -> Unit,
+    onLocalSearch: (String, Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var draft by remember(apiUrl) { mutableStateOf(apiUrl) }
+    var locationDraft by remember(localLocation) { mutableStateOf(localLocation) }
+    var radiusDraft by remember(localRadiusMiles) { mutableStateOf(localRadiusMiles.toString()) }
+
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Spacer(Modifier.height(8.dp)); Text("Settings", fontSize = 30.sp, fontWeight = FontWeight.Black) }
+        item {
+            GlassPanel {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Icon(Icons.Default.LocationOn, contentDescription = null)
+                    Column {
+                        Text("Local search area", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("Defines what PaidIn means by local or hybrid-nearby.", color = Color(0xFFE0FAFF))
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = locationDraft,
+                    onValueChange = { locationDraft = it },
+                    label = { Text("City, state or ZIP") },
+                    placeholder = { Text("Pittsburgh, PA") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = radiusDraft,
+                    onValueChange = { radiusDraft = it.filter(Char::isDigit).take(3) },
+                    label = { Text("Local radius (miles)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        val radius = radiusDraft.toIntOrNull()?.coerceIn(1, 250) ?: localRadiusMiles
+                        radiusDraft = radius.toString()
+                        onLocalSearch(locationDraft.trim(), radius)
+                    },
+                    enabled = locationDraft.isNotBlank(),
+                ) { Text("Save local area") }
+            }
+        }
         item { GlassPanel { Text("PaidIn server", fontWeight = FontWeight.Bold, fontSize = 18.sp); Text("The app works locally now; this address is ready for API sync work.", color = Color(0xFFE0FAFF)); Spacer(Modifier.height(8.dp)); OutlinedTextField(value = draft, onValueChange = { draft = it }, label = { Text("Base URL") }, modifier = Modifier.fillMaxWidth(), singleLine = true); Spacer(Modifier.height(8.dp)); Button(onClick = { onApiUrl(draft.trim()) }) { Text("Save server") } } }
         item { GlassPanel { Text("Share-sheet intake", fontWeight = FontWeight.Bold, fontSize = 18.sp); Text("In any browser: Share → PaidIn. The URL becomes a local pending-extraction job immediately.", color = Color(0xFFE0FAFF)) } }
     }
